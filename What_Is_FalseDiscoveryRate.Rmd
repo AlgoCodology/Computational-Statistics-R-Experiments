@@ -1,0 +1,113 @@
+---
+title: "Assignment 3 - i6306739 - FDR"
+author: "AmitKJadhav"
+date: "09/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Question - 
+ASSIGNMENT 3 - Solution
+
+Step 1 - Importing necessary libraries
+```{r}
+library("magrittr")
+library("tibble")
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+```
+
+Step 2 - Fetching the DTI data
+```{r}
+url = "https://web.stanford.edu/~hastie/CASI_files/DATA/DTI.txt"
+destfile = "DTI.txt"
+if(!file.exists(destfile)) download.file(url, destfile)
+z = read.csv(destfile) %>% as.matrix()
+```
+Step 3 - Computation of the histogram counts yi, for i = 1, 2, . . . , 50. Then, we fit a Poisson regression glm(y~ poly(x, 6), Poisson), with x the vector of bin centers.
+```{r}
+p = ggplot(tibble(z), aes(z)) +
+geom_histogram(bins = 50, alpha = 0.5)
+p_build = ggplot_build(p)
+hist_data = p_build$data[[1]]
+p = p + geom_point(data = hist_data, aes(x, y)) +
+ggtitle("Histogram of z_i's")
+```
+
+```{r}
+p
+```
+
+
+Fit a poisson distribution using a polynomial distribution of degree 6 for providing lambda = 6 to Poisson dist and then estimating f(z).
+```{r}
+fit = glm(y ~ poly(x, degree = 6), data = hist_data, family = poisson)
+
+fun_f_hat = function(x) predict(fit, data.frame(x = x), type = "response")
+df_fit = tibble(x = seq(min(z), max(z), 0.1),f_hat = fun_f_hat(x))
+p + geom_line(data = df_fit, aes(x, f_hat), color = "red") +
+ggtitle("Red curve is estimate of f(z)")
+```
+Next we are computing FDR for z values above 0 as required. In experimental terms this might imply that we are only interested to look at the dyslexic cases where the fluid flows were increased significantly (by significantly in this case means assuming FDR of 0.1). Hence we are ignoring those cases where the fluid flows are down-regulated in dyslexic subjects as compared to normal subjects. Thus ignoring the z values less than or equal to 0 from the FDR computation.
+```{r}
+revcumsum = function(x) rev(cumsum(rev(x)))
+pi_0 = 1
+df_fit %<>% mutate(F_right_hat = revcumsum(f_hat)/sum(f_hat))
+df_fit %<>% mutate(F_right_0 = 1-pnorm(df_fit$x))
+
+df_fit %>%
+pivot_longer(cols = c(F_right_hat, F_right_0),
+names_to = "type") %>%
+ggplot(aes(x, value, color = type)) +
+geom_line() +
+ggtitle("Right Tail intervals")
+```
+Computing FDR for z values > 0
+```{r}
+df_fit <- filter(df_fit,df_fit$x>0)
+df_fit %<>% mutate(Fdr = F_right_0*pi_0/F_right_hat)
+```
+
+Plotting z values versus FDR for all z values greater than 0 while setting the threshold for FDR = 0.1 and below as required in this assignment.
+
+```{r}
+ggplot(df_fit, aes(x, Fdr)) +
+geom_line() +
+xlab("z-values") +
+geom_hline(yintercept = 0.1, linetype = "dashed") +
+ggtitle("Empirical Bayes estimate of Fdr")
+```
+This above plot shows the chances of making false discoveries as against the magnitude of differences from the mean (in this case shown through z values of Z~N(0,1)) out of all the possible discoveries when comparing all the voxel distances between two above groups. We can see that as the difference between the voxel distances in terms of z values moves farther from the mean, we become more an more confident that we have made a discovery and hence the FDR equivalently goes on dropping to 0 gradually with increase in z values. 
+
+```{r}
+df_fit
+```
+
+Finally for the last question, to find the number of interesting voxels with the positive z-value region, we can see from the below df that the z value of 2.9996 has an associated FDR of 0.1060 i.e. 10.6% and z value of 3.0996 has an associated FDR of 0.08940 i.e. 8.94%. Since the computation is not performed with sufficient granularity, thereby, drawing a linear interpolation of the exact z value for which FDR is 0.1 or below, we get z value by below calculation:
+```{r}
+z1 = 2.9996
+z2 = 3.0996
+FDR1 = 0.10600177
+FDR2 = 0.08940403
+FDR_req = 0.1
+z_eff = z2 - (z2-z1)*(FDR2-FDR_req)/(FDR2-FDR1)
+z_eff
+```
+Thus, filtering the original data where z values are greater than 3.03576 we get:
+
+```{r}
+#url = "https://web.stanford.edu/~hastie/CASI_files/DATA/prostz.txt"
+url = "https://web.stanford.edu/~hastie/CASI_files/DATA/DTI.txt"
+#destfile = "prostz.txt"
+destfile = "DTI.txt"
+if(!file.exists(destfile)) download.file(url, destfile)
+z = read.csv(destfile) %>% as.matrix()
+z<-tibble(z)
+z <- filter(z, z>=z_eff)
+count(z)
+```
+Thus we can see that 190 out of 15443 voxels can be considered interesting assuming a false discovery rate of 0.1 or lower!
+

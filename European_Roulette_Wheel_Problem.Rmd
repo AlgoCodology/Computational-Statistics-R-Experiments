@@ -1,0 +1,73 @@
+---
+title: "Assignment1_CS_Studenti6306739"
+author: "AmitKJadhav"
+date: "12/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("readr")
+library("ggplot2")
+library("tibble")
+library("tidyr")
+library("magrittr")
+```
+--------Answers to the Assignment:---------------
+ANSWER A. We can use the binomial distribution in case of the European roulette wheel problem being discussed, since each of the 100 games of the roulette are independent of each other and have as an outcome, a win or a loss of the player in consideration. For such a binary scenario of n independent bernoulli trials, binomial distribution can be used.
+
+ANSWER B. The Null Hypothesis can be stated as: The player is a fair (non-cheating) player. The distribution of this null hypothesis are all the possible wins in 100 games given each win has a probability of 1/37. Hence the number of wins can be ranging from 0 to 100. This can be shown as a Binomial distribution as given below:
+```{r}
+games <- 100
+df<-tibble(
+  TotalWins = 1:games,
+  WinProbability_FairPlayer=replicate(games,dbinom(1:games,100,1/37))
+)
+```
+
+ANSWER C. The Alternate Hypothesis can be stated as: The player is a cheater. The distribution of this alternate hypothesis are all the possible wins in 100 games given each win has a probability of 1/20. Hence the number of wins can be ranging from 0 to 100. This can be shown as a Binomial distribution as given below:
+```{r}
+games <- 100
+df<-tibble(
+  TotalWins = 1:games,
+  WinProbability_CheatingPlayer=replicate(games,dbinom(1:games,100,1/20))
+  )
+```
+
+ANSWER D. As per the terminology of hypothesis testing, 80% for this problem corresponds to the Power of the test i.e. one minus beta OR one minus probability of type 2 error
+
+ANSWER E. The decision rule proposition can be derived by the below logical steps:
+  i. The prior probabilities are not available, however the power of the test is given and hence the type 2 error can be derived as 1 - 80% i.e. type 2 error = 1 - 0.8 = 0.2
+  ii. Since this is a non - composite alternate hypothesis, we can use the neyman-pearson lemma here to find the desired results take the ratio of errors as the center point of our calculations.
+  iii. Assuming Type 2 error of 0.2 or lesser as the power is to be taken as 0.8 or higher, therefore, by definition,
+  Type 2 error = P(accepting null hypothesis given alternate hypothesis is true)
+  we get Number of wins equalling pbinom(2,100,1/20) giving exact type 2 error as below:
+```{r}
+Type2Error <-pbinom(2,100,1/20)
+Type2Error
+```
+  Note that Type2error exceeds the prescribed 0.2 limit in case higher number of wins are considered. So for now, going with the decision rule that,
+  "DECISION RULE: In order to identify the cheating players correctly atleast 80% of the time we can Label a player as the cheating player if the player wins more than 2 games out of the 100 games"
+
+ANSWER F.The probability of calling a player a cheater who just got lucky and is not actually cheating can be signified as rejecting our null hypothesis given the null hypothesis holds i.e. P(rejecting null hypothesis given null hypothesis is true). This is called by the name TYPE 1 ERROR in the terminology of hypothesis testing. 
+
+ANSWER G. In the decision rule proposed above where any player with more than 2 wins is labelled a cheater, the probability of Type 1 Error i.e. alpha can be given by:
+```{r}
+(1-pbinom(2,100,1/37))
+```
+Thus the type 1 Error in this case is 50.93% which is too high. This justifies why the manager realizes that too many honest players are being flagged as cheaters.
+
+ANSWER H. I feel that given the winning probability of 1/37, the expected number of wins in 100 games for a fair player are 100/37 = 2.70
+Thus given that we are willing to compromise on the power of the test a bit, we can drastically reduce the type 1 error of falsely rejecting the null hypothesis.The new proposed decision rule can be "Any player with more than 3 wins is to be labelled as a cheating player".
+
+ANSWER I. This will have close to 71.5% power of correct identification but now only 25% of the honest players would be tagged as cheaters. Given the gravity of letting a cheating player go unidentified, we cannot consider 4 wins as a lucky honest players outcome given that the power of the test falls vastly.
+```{r}
+pbinom(3,100,0.05) #new type 1 error
+(1-pbinom(3,100,1/37)) #new type 2 error
+```
+
+
+

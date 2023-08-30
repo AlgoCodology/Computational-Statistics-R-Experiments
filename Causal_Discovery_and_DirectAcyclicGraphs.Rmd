@@ -1,0 +1,108 @@
+---
+title: "Assignment 4 - Causal Discovery and DAG - i6306739"
+author: "AmitKJadhav"
+date: "20/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("cowplot")
+```
+
+
+```{r}
+
+library("tidyverse")
+library("magrittr")
+#library("cowplot")
+library("broom")
+```
+
+```{r}
+data = read_csv("C:\\Users\\Amit\\Desktop\\df_dag.csv")
+data %>% print(n = 5)
+```
+Having a look at the correlation of both variables (Its known that no inference can be drawn about causality from correlation!)
+```{r}
+cor(data$x, data$y)
+
+```
+
+\large ANSWER 1:
+To examine the causal relationship between x and y, we made no assumptions about the distribution of the noise, but that the noise is an additive noise in the measurements of the real data. We also assume that the causal relationship is acyclic or not a cyclic relationship of causality. This leaves us with 3 possibilities i.e. Either X cause Y ( i.e. $X\rightarrow Y$) or Y causes X ( i.e. $Y\rightarrow X$) or that there is no causal relationship between Y and X ( i.e. $X$ is not caused by and does not cause $Y$)
+
+\large ANSWER 2 & 3:
+The procedure to define a Direct Acyclic graph (DAG) using our data along with its implementation in R are outlined here in a mixed way since R markdown allows explanations and code chunks to be mixed:
+
+Checking the variance of $X$ and $Y$.
+
+```{r}
+data<-tibble(data)
+var(data$x)
+var(data$y)
+```
+We see that the variance of X is smaller than Y. With the discussion of the lecture 11 in class, there might be a possibility that Y is down the line of causation and X might possibly cause Y. To verify this, going by deduction obtained from Eve's law.
+
+If X causes Y i.e. X $\rightarrow$ Y then,
+      $Y=$ $\alpha$ + $\beta*X$ and $\left(\frac{Var(Y)}{Var(X)}\right)>(1-\beta^2)$
+
+Fitting MLE using available data points of $X$ and $Y$ to see if the above assumptions hold.
+
+```{r}
+model <-lm(y ~ x,data)
+results<-tidy(model,conf.int = TRUE)
+```
+
+Displaying model fit statistics,
+
+```{r}
+results
+```
+Thus the estimate for coefficient of $X$ i.e. $\beta = 0.9816357$ and the corresponding intercept on $Y$ i.e. $\alpha = 0.0223929$
+
+Therefore, Calculating $\frac{Var(Y)}{Var(X)}$, we get,
+```{r}
+var(data$y)/var(data$x)
+```
+and calculating $1-\beta^2$, we get,
+```{r}
+beta<-results$std.error[1]
+1 - beta^2
+```
+Since $\frac{Var(Y)}{Var(X)}>(1-\beta^2)$, thus our deduction from Eve's law holds and hence X causes Y or $X\rightarrow Y$ holds.
+
+Checking the other way round, thus assuming that Y causes X, i.e. $Y = \gamma + \delta*X$ then,
+$\frac{Var(X)}{Var(Y)}>(1-\delta^2)$ should be true for the causal assumption to hold.
+```{r}
+altmodel <-lm(x ~ y,data)
+altresults<-tidy(altmodel,conf.int = TRUE)
+altresults
+```
+```{r}
+var(data$x)/var(data$y)
+```
+
+
+We have $\gamma= -0.03248071$ and $\delta=0.50613189$ and $\frac{Var(x)}{Var(y)} = 0.5156005$
+Thus calculating $1 - \delta^2$, we get,
+```{r}
+delta=altresults$std.error[1]
+1-delta^2
+```
+Thus we can clearly see that $\frac{Var(x)}{Var(y)} < (1 - \delta^2)$
+
+Therefore we can conclude that X causes Y (i.e. \big ($X \rightarrow Y$)).
+
+
+
+
+\large ANSWER 4:
+Our procedure as defined by the Park 2020, is not considering the cyclic causality. In terms of real world X & Y being the only two variables in consideration here, but it might be possible that there might be one or more confounders and / or intermediate variables which may play a role in the bias (by positively or negatively affecting the coefficient of predictor variable/s) or loss of precision (by affecting the intercept).
+
+
+

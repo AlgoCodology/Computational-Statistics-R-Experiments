@@ -1,0 +1,101 @@
+---
+title: "Assignment2_i6306739_Bootstrap"
+author: "AmitKJadhav"
+date: "23/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("readr")
+library("ggplot2")
+library("tibble")
+library("tidyr")
+library("magrittr")
+```
+Assignment Question: What is the most likely bootstrap sample and its associated probability for sample sizes n = 3, . . . , 15?
+
+SOLUTION: As I understand, we have to find the most likely bootstrap sample out of all the possible bootstrap samples for a given 'n'.
+
+Considering the case of n=3, Let 1, 2, 3 be the elements of the original sample.
+
+Hence the total number of possible bootstraps of size 3 would be 3 * 3 * 3 = 3^3 = 27. If we enumerate all the possible bootstraps of size 3 drawn from the above sample of size 3, we get the following possibilities:
+1 - 1 1 1
+2 - 1 1 2
+3 - 1 1 3
+4 - 1 2 1
+5 - 1 2 2
+6 - 1 2 3
+7 - 1 3 1
+8 - 1 3 2
+9 - 1 3 3
+10 - 2 1 1
+11 - 2 1 2
+12 - 2 1 3
+13 - 2 2 1
+14 - 2 2 2
+15 - 2 2 3
+16 - 2 3 1
+17 - 2 3 2
+18 - 2 3 3
+19 - 3 1 1
+20 - 3 1 2
+21 - 3 1 3
+22 - 3 2 1
+23 - 3 2 2
+24 - 3 2 3
+25 - 3 3 1
+26 - 3 3 2
+27 - 3 3 3
+
+Note that as per the definition of bootstrap, since each element can either be included or excluded from the sample with replacement, and because the order does not matter, we can observe that the total number of distinct bootstrap samples are much lesser than 27 (in this case only 10). This is because, 123, 132, 213, 231, 312, 321 are all considered as the same bootstrap sample.
+
+Therefore this problem can be visualized as analogous to Bose-Einstein statitics of choosing 'n' particles and assigning 'n' energy levels to each of these particles. The number of ways to do this is same as choosing n out of 2n-1 i.e. (2n-1 C n)
+This can be denoted as (2n-1)! / [(n!)*(2n-1-n)!]
+= (2n-1)! / [(n)!*(n-1)!]
+
+EXPLAINATION OF RATIONALE: We can notice that not all the bootstraps are equally likely. The most likely bootstrap sample is the one with maximum diversity and minimum duplication in the elements as duplication would reduce the number of arrangements to obtain higher number of equivalent bootstraps resampled from the same original sample.
+Thus, the most likely bootstrap would have n! arrangements with all different elements with n being the number of distinct elements in the original sample.
+
+The the probability of most - likely bootstrap sample is number of equivalent bootstrap samples of the most likely sample divided by the total number of bootstraps possible i.e. n-factorial / n^n
+
+I have listed below the probabilities of most likely bootstrap samples for sample sizes 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 and 15
+```{r}
+repetitions <- 13
+samplesizes=rep(NA,repetitions)
+TotalBootstrapsPossible = rep(NA, repetitions)
+MostLikelyBootstraps = rep(NA, repetitions)
+ProbabilityMLBootstrap = rep(NA, repetitions)
+for (i in 1:repetitions){
+  #DEFINE SAMPLE SIZE
+  samplesizes[i] <- i+2
+  #DEFINE TOTAL POSSIBLE BOOTSTRAPS
+  TotalBootstrapsPossible [i] <- samplesizes[i]**samplesizes[i]
+  #DEFINE MOST LIKELY BOOTSTRAPS
+  MostLikelyBootstraps [i] <- factorial(samplesizes[i])
+  #DEFINE PROBABILITY OF MOST LIKELY BOOTSTRAPS
+  ProbabilityMLBootstrap [i]<- MostLikelyBootstraps[i]/TotalBootstrapsPossible[i]
+}
+```
+
+Now let us visualize the results of probabilities:
+```{r}
+df<-tibble(samplesizes,TotalBootstrapsPossible,MostLikelyBootstraps,ProbabilityMLBootstrap)
+head(df,13)
+```
+
+
+```{r}
+plot(samplesizes, ProbabilityMLBootstrap, main = "Probability - Most Likely Bootstrap")
+```
+```{r}
+plot(samplesizes, TotalBootstrapsPossible, main = "Total Possible Bootstraps")
+```
+
+```{r}
+plot(samplesizes, MostLikelyBootstraps, main = "Total Equivalent Most Likely Bootstraps")
+```
+
